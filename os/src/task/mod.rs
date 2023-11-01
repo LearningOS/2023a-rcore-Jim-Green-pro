@@ -9,6 +9,8 @@
 //! Be careful when you see `__switch` ASM function in `switch.S`. Control flow around this function
 //! might not be what you expect.
 
+use crate::config::MAX_SYSCALL_NUM;
+
 mod context;
 mod switch;
 #[allow(clippy::module_inception)]
@@ -36,7 +38,7 @@ pub struct TaskManager {
     /// total number of tasks
     num_app: usize,
     /// use inner value to get mutable access
-    inner: UPSafeCell<TaskManagerInner>,
+    pub inner: UPSafeCell<TaskManagerInner>,
 }
 
 /// Inner of Task Manager
