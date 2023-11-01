@@ -10,16 +10,9 @@
 //! `sys_` then the name of the syscall. You can find functions like this in
 //! submodules, and you should also implement syscalls this way.
 
-<<<<<<< HEAD
-use crate::task::TASK_MANAGER;
 
-=======
-<<<<<<< HEAD
 use crate::task::TASK_MANAGER; // 导入 TASK_MANAGER
 
-=======
->>>>>>> dd1707305386a03ef6edce6d662ff8681d092d9e
->>>>>>> 757505691864657d732af58dd2d73c55a76c99eb
 /// write syscall
 const SYSCALL_WRITE: usize = 64;
 /// exit syscall
