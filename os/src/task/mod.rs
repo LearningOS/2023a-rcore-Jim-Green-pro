@@ -8,6 +8,7 @@
 //!
 //! Be careful when you see `__switch` ASM function in `switch.S`. Control flow around this function
 //! might not be what you expect.
+use crate::timer::get_time_us;
 
 use crate::config::MAX_SYSCALL_NUM;
 
@@ -44,9 +45,21 @@ pub struct TaskManager {
 /// Inner of Task Manager
 pub struct TaskManagerInner {
     /// task list
-    tasks: [TaskControlBlock; MAX_APP_NUM],
+    pub tasks: [TaskControlBlock; MAX_APP_NUM],
     /// id of current `Running` task
-    current_task: usize,
+    pub current_task: usize,
+}
+
+// 在这里为TaskManagerInner添加getter方法
+impl TaskManagerInner {
+    /// Returns a reference to all tasks in the task manager.
+    pub fn get_tasks(&self) -> &[TaskControlBlock; MAX_APP_NUM] {
+        &self.tasks
+    }
+    /// Returns the index of the current task in the task manager.
+    pub fn get_current_task(&self) -> usize {
+        self.current_task
+    }
 }
 
 lazy_static! {

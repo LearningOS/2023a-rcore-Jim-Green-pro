@@ -1,5 +1,6 @@
 //! Process management syscalls
 
+use crate::task::TASK_MANAGER;
 
 
 use crate::{
@@ -62,7 +63,7 @@ pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
     // 获取当前任务的TaskControlBlock
     let tcb = {
         let inner = TASK_MANAGER.inner.exclusive_access();
-        &inner.tasks[inner.current_task]
+        inner.tasks[inner.current_task].clone()
     };
 
     // 检查指针的有效性

@@ -1,10 +1,10 @@
 //! Types related to task management
 
-use crate::config::MAX_SYSCALL_NUM;
+//use crate::config::MAX_SYSCALL_NUM;
 
 use super::TaskContext;
 
-use crate::timer::get_time_us;
+//use crate::timer::get_time_us;
 
 /// The task control block (TCB) of a task.
 #[derive(Copy, Clone)]
