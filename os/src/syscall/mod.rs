@@ -31,24 +31,13 @@ use fs::*;
 use process::*;
 /// handle syscall exception with `syscall_id` and other arguments
 pub fn syscall(syscall_id: usize, args: [usize; 3]) -> isize {
-<<<<<<< HEAD
-    // 更新系统调用计数
-    {
-        let inner = TASK_MANAGER.inner.exclusive_access();
-        inner.tasks[inner.current_task].syscall_times[syscall_id] += 1;
-    }
 
-=======
-<<<<<<< HEAD
     // 在处理系统调用之前，更新当前任务的系统调用计数
     let current_task = &mut TASK_MANAGER.inner.exclusive_access().tasks[TASK_MANAGER.inner.exclusive_access().current_task];
     if syscall_id < current_task.syscall_times.len() {
         current_task.syscall_times[syscall_id] += 1;
     }
 
-=======
->>>>>>> dd1707305386a03ef6edce6d662ff8681d092d9e
->>>>>>> 757505691864657d732af58dd2d73c55a76c99eb
     match syscall_id {
         SYSCALL_WRITE => sys_write(args[0], args[1] as *const u8, args[2]),
         SYSCALL_EXIT => sys_exit(args[0] as i32),

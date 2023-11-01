@@ -54,16 +54,8 @@ lazy_static! {
         let mut tasks = [TaskControlBlock {
             task_cx: TaskContext::zero_init(),
             task_status: TaskStatus::UnInit,
-<<<<<<< HEAD
             syscall_times: [0; MAX_SYSCALL_NUM], // 初始化为0
             start_time: get_time_us() / 1_000,   // 初始化为当前时间
-=======
-<<<<<<< HEAD
-            syscall_times: [0; super::MAX_SYSCALL_NUM], // 初始化为全零数组
-            start_time: get_current_time(), // 初始化为当前时间
-=======
->>>>>>> dd1707305386a03ef6edce6d662ff8681d092d9e
->>>>>>> 757505691864657d732af58dd2d73c55a76c99eb
         }; MAX_APP_NUM];
         for (i, task) in tasks.iter_mut().enumerate() {
             task.task_cx = TaskContext::goto_restore(init_app_cx(i));
