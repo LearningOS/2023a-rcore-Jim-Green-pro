@@ -32,13 +32,17 @@ use fs::*;
 use process::*;
 /// handle syscall exception with `syscall_id` and other arguments
 pub fn syscall(syscall_id: usize, args: [usize; 3]) -> isize {
+    // 更新当前任务的系统调用计数
+    {
+        let task_manager = &mut TASK_MANAGER.inner.exclusive_access();
+        let current_task_index = task_manager.current_task;
+        let current_task = &mut task_manager.tasks[current_task_index];
+        if syscall_id < current_task.syscall_times.len() {
+            current_task.syscall_times[syscall_id] += 1;
+        }
+    } // 这里结束了对TASK_MANAGER的引用
 
-    // 在处理系统调用之前，更新当前任务的系统调用计数
-    let current_task = &mut TASK_MANAGER.inner.exclusive_access().tasks[TASK_MANAGER.inner.exclusive_access().current_task];
-    if syscall_id < current_task.syscall_times.len() {
-        current_task.syscall_times[syscall_id] += 1;
-    }
-
+    // 现在，我们可以安全地调用其他函数，而不用担心引用冲突
     match syscall_id {
         SYSCALL_WRITE => sys_write(args[0], args[1] as *const u8, args[2]),
         SYSCALL_EXIT => sys_exit(args[0] as i32),
