@@ -51,7 +51,26 @@ pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
 }
 
 /// YOUR JOB: Finish sys_task_info to pass testcases
-pub fn sys_task_info(_ti: *mut TaskInfo) -> isize {
+pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
     trace!("kernel: sys_task_info");
-    -1
+
+    // 获取当前任务的TaskControlBlock
+    let tcb = {
+        let inner = TASK_MANAGER.inner.exclusive_access();
+        &inner.tasks[inner.current_task]
+    };
+
+    // 检查指针的有效性
+    if ti.is_null() {
+        return -1;
+    }
+
+    // 安全地填充TaskInfo结构体
+    unsafe {
+        (*ti).status = tcb.task_status;
+        (*ti).syscall_times = tcb.syscall_times;
+        (*ti).time = get_time_us() / 1_000 - tcb.start_time; // 假设get_time_us返回的是微秒
+    }
+
+    0
 }
