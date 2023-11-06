@@ -210,6 +210,13 @@ impl TaskManager {
         let curr_task_tcb = &mut inner.tasks[current];
         curr_task_tcb.memory_set.munmap(start_vpn, end_vpn)
     }
+
+    /// 调用次数
+    pub fn get_syscall_count(&self) -> [u32; MAX_SYSCALL_NUM] {
+        let inner = TASK_MANAGER.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].task_syscall_times
+    }
 }
 
 /// Run the first task in task list.
@@ -277,9 +284,7 @@ pub fn now_task_time() -> usize {
 // ch4
 /// 获取当前任务的系统调用计数。
 pub fn get_syscall_count() -> [u32; MAX_SYSCALL_NUM] {
-    let inner = TASK_MANAGER.inner.exclusive_access();
-    let current = inner.current_task;
-    inner.tasks[current].task_syscall_times
+    TASK_MANAGER.get_syscall_count()
 }
 /// 获取任务开始时间
 pub fn get_task_time() -> usize {
