@@ -20,6 +20,11 @@ use crate::trap::TrapContext;
 use alloc::vec::Vec;
 use lazy_static::*;
 use switch::__switch;
+//ch4
+use crate::timer::{get_time_us,get_time_ms};
+use crate::syscall::process::TimeVal;
+use crate::config::MAX_SYSCALL_NUM;
+
 pub use task::{TaskControlBlock, TaskStatus};
 
 pub use context::TaskContext;
@@ -35,18 +40,19 @@ pub use context::TaskContext;
 /// existing functions on `TaskManager`.
 pub struct TaskManager {
     /// total number of tasks
-    num_app: usize,
+    pub num_app: usize,
     /// use inner value to get mutable access
-    inner: UPSafeCell<TaskManagerInner>,
+    pub inner: UPSafeCell<TaskManagerInner>,
 }
 
 /// The task manager inner in 'UPSafeCell'
-struct TaskManagerInner {
+pub struct TaskManagerInner {
     /// task list
-    tasks: Vec<TaskControlBlock>,
+    pub tasks: Vec<TaskControlBlock>,
     /// id of current `Running` task
-    current_task: usize,
+    pub current_task: usize,
 }
+
 
 lazy_static! {
     /// a `TaskManager` global instance through lazy_static!
@@ -79,6 +85,8 @@ impl TaskManager {
         let mut inner = self.inner.exclusive_access();
         let next_task = &mut inner.tasks[0];
         next_task.task_status = TaskStatus::Running;
+        // copy by maker Tianpingan
+        next_task.task_time = get_time_ms();
         let next_task_cx_ptr = &next_task.task_cx as *const TaskContext;
         drop(inner);
         let mut _unused = TaskContext::zero_init();
@@ -153,6 +161,37 @@ impl TaskManager {
             panic!("All applications completed!");
         }
     }
+    
+    // /// 将TimeVal转换为字节数组
+    // pub fn to_bytes(&self) -> [u8; 2 * core::mem::size_of::<usize>()] {
+    //     let mut bytes = [0u8; 2 * core::mem::size_of::<usize>()];
+    //     let sec_bytes = self.usize_to_bytes(self.sec);
+    //     let usec_bytes = self.usize_to_bytes(self.usec);
+        
+    //     let usize_size = core::mem::size_of::<usize>();
+    //     for i in 0..usize_size {
+    //         bytes[i] = sec_bytes[i];
+    //         bytes[i + usize_size] = usec_bytes[i];
+    //     }
+        
+    //     bytes
+    // }
+
+    // /// 将usize值转换为字节数组
+    // fn usize_to_bytes(&self, val: usize) -> [u8; core::mem::size_of::<usize>()] {
+    //     let mut arr = [0u8; core::mem::size_of::<usize>()];
+    //     for i in 0..core::mem::size_of::<usize>() {
+    //         arr[i] = ((val >> (i * 8)) & 0xFF) as u8;
+    //     }
+    //     arr
+    // }
+
+    /// get_task_time 
+    pub fn get_task_time(&self) -> usize {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].task_time
+    }
 }
 
 /// Run the first task in task list.
@@ -201,4 +240,30 @@ pub fn current_trap_cx() -> &'static mut TrapContext {
 /// Change the current 'Running' task's program break
 pub fn change_program_brk(size: i32) -> Option<usize> {
     TASK_MANAGER.change_current_program_brk(size)
+}
+
+// ch4
+/// 获取当前时间，并将其转换为一个 usize 值
+pub fn now_task_time() -> usize {
+    // 获取当前的微秒时间
+    let us = get_time_us();
+    // 使用微秒时间创建 TimeVal 结构体
+    let time: TimeVal = TimeVal {
+        sec: us / 1_000_000,  // 计算秒数
+        usec: us % 1_000_000, // 计算微秒数
+    };
+    // 将秒和微秒组合成一个 usize 值并返回
+    ((time.sec & 0xffff) * 1000 + time.usec / 1000) as usize
+}
+
+// ch4
+/// 获取当前任务的系统调用计数。
+pub fn get_syscall_count() -> [u32; MAX_SYSCALL_NUM] {
+    let inner = TASK_MANAGER.inner.exclusive_access();
+    let current = inner.current_task;
+    inner.tasks[current].task_syscall_times
+}
+/// 获取任务开始时间
+pub fn get_task_time() -> usize {
+    TASK_MANAGER.get_task_time()
 }

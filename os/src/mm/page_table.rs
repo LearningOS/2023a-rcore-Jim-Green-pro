@@ -8,13 +8,21 @@ use bitflags::*;
 bitflags! {
     /// page table entry flags
     pub struct PTEFlags: u8 {
+        /// Valid flag.
         const V = 1 << 0;
+        /// Readable flag.
         const R = 1 << 1;
+        /// Writable flag.
         const W = 1 << 2;
+        /// Executable flag.
         const X = 1 << 3;
+        /// User mode flag.
         const U = 1 << 4;
+        /// Global flag.
         const G = 1 << 5;
+        /// Accessed flag.
         const A = 1 << 6;
+        /// Dirty flag.
         const D = 1 << 7;
     }
 }
@@ -171,3 +179,44 @@ pub fn translated_byte_buffer(token: usize, ptr: *const u8, len: usize) -> Vec<&
     }
     v
 }
+
+// pub fn translated_byte_buffer(token: usize, ptr: *const u8, len: usize) -> Result<Vec<&'static mut [u8]>, &'static str> {
+//     // 从token获取页表
+//     let page_table = PageTable::from_token(token);
+//     // 定义起始和结束的虚拟地址
+//     let mut start = ptr as usize;
+//     let end = start + len;
+//     // 初始化一个空的Vec来存储结果
+//     let mut v = Vec::new();
+//     // 当start小于end时，循环继续
+//     while start < end {
+//         // 将start转换为虚拟地址类型
+//         let start_va = VirtAddr::from(start);
+//         // 获取start的虚拟页面号
+//         let mut vpn = start_va.floor();
+//         // 使用页表将虚拟页面号转换为物理页面号
+//         match page_table.translate(vpn) {
+//             Some(translation) => {
+//                 let ppn = translation.ppn();
+//                 // 将vpn加1，以指向下一个虚拟页面
+//                 vpn.step();
+//                 // 计算下一个虚拟页面的开始地址
+//                 let mut end_va: VirtAddr = vpn.into();
+//                 // 如果end_va大于end，则将其设置为end
+//                 end_va = end_va.min(VirtAddr::from(end));
+//                 // 根据start_va和end_va的页面偏移量，从ppn获取一个字节数组的子切片，并将其添加到结果Vec中
+//                 if end_va.page_offset() == 0 {
+//                     v.push(&mut ppn.get_bytes_array()[start_va.page_offset()..]);
+//                 } else {
+//                     v.push(&mut ppn.get_bytes_array()[start_va.page_offset()..end_va.page_offset()]);
+//                 }
+//                 // 更新start为end_va
+//                 start = end_va.into();
+//             },
+//             // 如果转换失败，则返回错误
+//             None => return Err("Failed to translate virtual address")
+//         }
+//     }
+//     // 返回填充有字节缓冲区的Vec
+//     Ok(v)
+// }

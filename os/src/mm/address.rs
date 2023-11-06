@@ -1,23 +1,30 @@
 //! Implementation of physical and virtual address and page number.
+//! 物理和虚拟地址以及页号的实现。
 use super::PageTableEntry;
 use crate::config::{PAGE_SIZE, PAGE_SIZE_BITS};
 use core::fmt::{self, Debug, Formatter};
 /// physical address
+/// SV39模式下的物理地址宽度
 const PA_WIDTH_SV39: usize = 56;
 const VA_WIDTH_SV39: usize = 39;
 const PPN_WIDTH_SV39: usize = PA_WIDTH_SV39 - PAGE_SIZE_BITS;
 const VPN_WIDTH_SV39: usize = VA_WIDTH_SV39 - PAGE_SIZE_BITS;
 
 /// physical address
+/// 物理地址
+/// SV39模式下的虚拟地址宽度
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PhysAddr(pub usize);
 /// virtual address
+/// 虚拟地址
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct VirtAddr(pub usize);
 /// physical page number
+/// 物理页号
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PhysPageNum(pub usize);
 /// virtual page number
+/// 虚拟页号
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct VirtPageNum(pub usize);
 
@@ -47,6 +54,7 @@ impl Debug for PhysPageNum {
 /// T: {PhysAddr, VirtAddr, PhysPageNum, VirtPageNum}
 /// T -> usize: T.0
 /// usize -> T: usize.into()
+
 
 impl From<usize> for PhysAddr {
     fn from(v: usize) -> Self {
@@ -217,13 +225,16 @@ impl<T> SimpleRange<T>
 where
     T: StepByOne + Copy + PartialEq + PartialOrd + Debug,
 {
+    /// ch4
     pub fn new(start: T, end: T) -> Self {
         assert!(start <= end, "start {:?} > end {:?}!", start, end);
         Self { l: start, r: end }
     }
+    /// ch4
     pub fn get_start(&self) -> T {
         self.l
     }
+    /// ch4
     pub fn get_end(&self) -> T {
         self.r
     }
@@ -250,6 +261,7 @@ impl<T> SimpleRangeIterator<T>
 where
     T: StepByOne + Copy + PartialEq + PartialOrd + Debug,
 {
+    /// ch4
     pub fn new(l: T, r: T) -> Self {
         Self { current: l, end: r }
     }

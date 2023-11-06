@@ -21,7 +21,7 @@ pub fn init_heap() {
             .init(HEAP_SPACE.as_ptr() as usize, KERNEL_HEAP_SIZE);
     }
 }
-
+/// ch4
 #[allow(unused)]
 pub fn heap_test() {
     use alloc::boxed::Box;

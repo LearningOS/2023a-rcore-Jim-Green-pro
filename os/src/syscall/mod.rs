@@ -26,7 +26,8 @@ const SYSCALL_MMAP: usize = 222;
 const SYSCALL_TASK_INFO: usize = 410;
 
 mod fs;
-mod process;
+// 导出 process 模块，使其他模块可以访问它
+pub mod process;
 
 use fs::*;
 use process::*;
