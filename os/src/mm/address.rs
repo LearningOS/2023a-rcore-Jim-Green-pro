@@ -55,7 +55,6 @@ impl Debug for PhysPageNum {
 /// T -> usize: T.0
 /// usize -> T: usize.into()
 
-
 impl From<usize> for PhysAddr {
     fn from(v: usize) -> Self {
         Self(v & ((1 << PA_WIDTH_SV39) - 1))
