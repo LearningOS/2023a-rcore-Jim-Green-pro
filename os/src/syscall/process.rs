@@ -1,10 +1,11 @@
 //! Process management syscalls
+#![allow(unused_imports)] // 这将允许未使用的导入
 use crate::{
     config::MAX_SYSCALL_NUM,
     task::{
         change_program_brk, exit_current_and_run_next, suspend_current_and_run_next,
         TaskStatus, current_user_token,now_task_time,get_syscall_count,get_task_time,
-        TASK_MANAGER
+        TASK_MANAGER,mmap, munmap,
     },
     timer::{get_time_us, get_time_ms},
     mm::{
@@ -163,9 +164,7 @@ pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
 
 /// YOUR JOB: Implement mmap.
 pub fn sys_mmap(start: usize, len: usize, port: usize) -> isize {
-    trace!("kernel: sys_mmap NOT IMPLEMENTED YET!");
-    // 在函数内部创建PageTable实例
-    let mut page_table = PageTable::new();
+    trace!("kernel: sys_mmap NOT IMPLEMENTED YET!"); 
     // 将起始地址转换为虚拟地址
     let start_vaddr: VirtAddr = start.into();
     // 检查起始地址是否已对齐
@@ -185,35 +184,9 @@ pub fn sys_mmap(start: usize, len: usize, port: usize) -> isize {
     let end_vaddr: VirtAddr = (start + len).into();
     let start_vpn: VirtPageNum = start_vaddr.into();
     let end_vpn: VirtPageNum = (end_vaddr).ceil();
-    // 根据port设置页表条目标志
-    let mut flags = PTEFlags::V; // V表示有效
-    if port & 0x1 == 0x1 {
-        flags |= PTEFlags::R; // R表示可读
-    }
-    if port & 0x2 == 0x2 {
-        flags |= PTEFlags::W; // W表示可写
-    }
-    if port & 0x4 == 0x4 {
-        flags |= PTEFlags::X; // X表示可执行
-    }
-
-    // 使用SimpleRange来创建一个虚拟页号的范围
-    let vpn_range = SimpleRange::new(start_vpn, end_vpn);
-
-    // 使用into_iter()方法来迭代SimpleRange
-    for vpn in vpn_range.into_iter() {
-        // 使用translate方法获取物理页号
-        if let Some(pte) = page_table.translate(vpn) {
-            let ppn = pte.ppn();
-            page_table.map(vpn, ppn, flags);
-        } else {
-            // 如果没有找到对应的物理页号，分配一个新的物理页
-            let frame_tracker = frame_alloc().expect("Failed to allocate a new frame");
-            let new_ppn = frame_tracker.ppn;
-            page_table.map(vpn, new_ppn, flags);
-        }
-    }
-    0
+    
+    mmap(start_vpn, end_vpn, port)
+    
 }
 
 // YOUR JOB: Implement mmap.
@@ -271,34 +244,18 @@ pub fn sys_mmap(start: usize, len: usize, port: usize) -> isize {
 /// YOUR JOB: Implement munmap.
 pub fn sys_munmap(_start: usize, _len: usize) -> isize {
     trace!("kernel: sys_munmap NOT IMPLEMENTED YET!");
-    // 检查起始地址是否对齐
-    if !VirtAddr::from(_start).aligned() {
-        error!("起始地址未对齐");
-        return -1;
-    }
-
-    // 获取任务管理器的独占访问权限
-    let mut inner = TASK_MANAGER.inner.exclusive_access();
-    // 获取当前任务
-    let current = inner.current_task;
-
-    // 计算起始和结束的虚拟页号
-    let svpn = VirtAddr::from(_start).floor();
-    let evpn = VirtAddr::from(_start + _len).ceil();
-    let vpns = VPNRange::new(svpn, evpn);
-
-    // 遍历虚拟页号范围
-    for vpn in vpns {
-        let pte_option = inner.tasks[current].memory_set.translate(vpn);
-        if pte_option.is_some() && pte_option.unwrap().is_valid() {
-            // 在页表中取消映射虚拟页号
-            inner.tasks[current].memory_set.page_table.unmap(vpn);
-        } else {
-            error!("虚拟页号 {:?} 未映射或页表条目无效", vpn);
-            return -1;
-        }
-    }
-    0
+     // 将起始地址转换为虚拟地址
+     let start_vaddr: VirtAddr = _start.into();
+     // 检查起始地址是否已对齐
+     if !start_vaddr.aligned() {
+         debug!("映射失败：起始地址未对齐");
+         return -1;
+     }
+     // 计算结束地址
+     let end_vaddr: VirtAddr = (_start + _len).into();
+     let start_vpn: VirtPageNum = start_vaddr.into();
+     let end_vpn: VirtPageNum = (end_vaddr).ceil();
+    munmap(start_vpn, end_vpn)
 }
 
 /// change data segment size

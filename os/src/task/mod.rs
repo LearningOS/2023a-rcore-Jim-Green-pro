@@ -25,6 +25,9 @@ use crate::timer::{get_time_us,get_time_ms};
 use crate::syscall::process::TimeVal;
 use crate::config::MAX_SYSCALL_NUM;
 
+
+use crate::mm::address::VirtPageNum;
+
 pub use task::{TaskControlBlock, TaskStatus};
 
 pub use context::TaskContext;
@@ -192,6 +195,21 @@ impl TaskManager {
         let current = inner.current_task;
         inner.tasks[current].task_time
     }
+    /// 申请
+    pub fn mmap(&self, start_vpn: VirtPageNum, end_vpn: VirtPageNum, port: usize) -> isize {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        let curr_task_tcb = &mut inner.tasks[current];
+        curr_task_tcb.memory_set.mmap(start_vpn, end_vpn, port)
+    }
+
+    /// 释放
+    pub fn munmap(&self, start_vpn: VirtPageNum, end_vpn: VirtPageNum) -> isize {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        let curr_task_tcb = &mut inner.tasks[current];
+        curr_task_tcb.memory_set.munmap(start_vpn, end_vpn)
+    }
 }
 
 /// Run the first task in task list.
@@ -266,4 +284,13 @@ pub fn get_syscall_count() -> [u32; MAX_SYSCALL_NUM] {
 /// 获取任务开始时间
 pub fn get_task_time() -> usize {
     TASK_MANAGER.get_task_time()
+}
+///申请
+pub fn mmap(start_vpn: VirtPageNum, end_vpn: VirtPageNum, port: usize) -> isize {
+    TASK_MANAGER.mmap(start_vpn, end_vpn, port)
+}
+
+///释放
+pub fn munmap(start_vpn: VirtPageNum, end_vpn: VirtPageNum) -> isize {
+    TASK_MANAGER.munmap(start_vpn, end_vpn)
 }
