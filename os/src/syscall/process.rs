@@ -13,6 +13,9 @@ use crate::{
         address::{VirtAddr,SimpleRange,VPNRange,VirtPageNum},
         frame_allocator::frame_alloc
     },
+    syscall::SYSCALL_TASK_INFO,
+    syscall::SYSCALL_YIELD,
+    syscall::SYSCALL_GETTIMEOFDAY,
 };
 
 /// 表示时间的结构体。
@@ -106,7 +109,24 @@ pub fn sys_exit(_exit_code: i32) -> ! {
 /// current task gives up resources for other tasks
 pub fn sys_yield() -> isize {
     trace!("kernel: sys_yield");
+    
+    // 获取 TASK_MANAGER 的独占访问权
+    let mut task_manager_inner = TASK_MANAGER.inner.exclusive_access();
+    // 获取当前任务的索引
+    let current_task_index = task_manager_inner.current_task;
+    // 获取当前任务的可变引用
+    let current_task = &mut task_manager_inner.tasks[current_task_index];
+
+    // 增加当前任务的系统调用计数
+    // 注意：这里假设您有一个名为 `SYSCALL_YIELD` 的常量来表示 sys_yield 调用
+    current_task.increase_syscall_count(SYSCALL_YIELD);
+
+    // 释放对 TASK_MANAGER 的独占访问权
+    drop(task_manager_inner);
+
+    // 挂起当前任务并运行下一个任务
     suspend_current_and_run_next();
+    
     0
 }
 
@@ -115,6 +135,19 @@ pub fn sys_yield() -> isize {
 /// HINT: What if [`TimeVal`] is splitted by two pages ?
 pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
     trace!("kernel: sys_get_time");
+    // 获取 TASK_MANAGER 的独占访问权
+    let mut task_manager_inner = TASK_MANAGER.inner.exclusive_access();
+    // 获取当前任务的索引
+    let current_task_index = task_manager_inner.current_task;
+    // 获取当前任务的可变引用
+    let current_task = &mut task_manager_inner.tasks[current_task_index];
+
+    // 增加对应的系统调用计数
+    current_task.increase_syscall_count(SYSCALL_GETTIMEOFDAY);
+
+    // 释放对 TASK_MANAGER 的独占访问权
+    drop(task_manager_inner);
+    
     // 获取当前时间（微秒）
     let us = get_time_us();
     // 创建 TimeVal 结构体
@@ -142,12 +175,23 @@ pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
 /// HINT: What if [`TaskInfo`] is splitted by two pages ?
 pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
     trace!("kernel: sys_task_info");
-    
+    // 获取 TASK_MANAGER 的独占访问权
+    let mut task_manager_inner = TASK_MANAGER.inner.exclusive_access();
+    // 获取当前任务的索引
+    let current_task_index = task_manager_inner.current_task;
+    // 获取当前任务的可变引用
+    let current_task = &mut task_manager_inner.tasks[current_task_index];
+
+    // 现在可以在 current_task 上调用方法来增加系统调用计数
+    current_task.increase_syscall_count(SYSCALL_TASK_INFO);
+
+    // 释放对 TASK_MANAGER 的独占访问权
+    drop(task_manager_inner);
+
     // 获取当前任务的信息
     let syscall_times = get_syscall_count();
     let _time = now_task_time() - get_task_time();
     let task_info = TaskInfo::new(TaskStatus::Running, syscall_times, get_time_ms());
-
     
     let serialized = task_info.to_bytes();
 

@@ -107,6 +107,12 @@ impl TaskControlBlock {
             None
         }
     }
+    /// 增加系统调用计数
+    pub fn increase_syscall_count(&mut self, syscall_id: usize) {
+        if syscall_id < MAX_SYSCALL_NUM {
+            self.task_syscall_times[syscall_id] += 1;
+        }
+    }
 }
 
 #[derive(Copy, Clone, PartialEq)]
