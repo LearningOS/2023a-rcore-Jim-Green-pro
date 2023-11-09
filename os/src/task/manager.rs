@@ -7,7 +7,6 @@ use lazy_static::*;
 ///A array of `TaskControlBlock` that is thread-safe
 pub struct TaskManager {
     ready_queue: VecDeque<Arc<TaskControlBlock>>,
-
 }
 
 /// A simple FIFO scheduler.

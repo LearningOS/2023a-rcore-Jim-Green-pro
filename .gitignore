@@ -15,4 +15,8 @@ easy-fs-fuse/target/*
 tools/
 pushall.sh
 *.bak
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8dd364c17498200041f908d003bf1bfd76384f45
 user/*
