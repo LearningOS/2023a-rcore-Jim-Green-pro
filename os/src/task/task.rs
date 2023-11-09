@@ -9,6 +9,8 @@ use alloc::sync::{Arc, Weak};
 use alloc::vec::Vec;
 use core::cell::RefMut;
 
+use crate::config::DEFAULT_PRIORITY;
+
 /// Task control block structure
 ///
 /// Directly save the contents that will not change during running
@@ -68,6 +70,12 @@ pub struct TaskControlBlockInner {
 
     /// Program break
     pub program_brk: usize,
+
+    /// 进程的stride值，用于Stride调度算法
+    pub stride: usize,
+
+    /// 进程的pass值，与进程优先级成反比
+    pub pass: usize,
 }
 
 impl TaskControlBlockInner {
@@ -82,8 +90,13 @@ impl TaskControlBlockInner {
     fn get_status(&self) -> TaskStatus {
         self.task_status
     }
+    /// 检查当前进程是否为僵尸进程
     pub fn is_zombie(&self) -> bool {
         self.get_status() == TaskStatus::Zombie
+    }
+    /// 在任务被调度后更新其stride值
+    pub fn update_stride(&mut self) {
+        self.stride += self.pass;
     }
 }
 
@@ -118,6 +131,8 @@ impl TaskControlBlock {
                     exit_code: 0,
                     heap_bottom: user_sp,
                     program_brk: user_sp,
+                    stride: DEFAULT_PRIORITY,
+                    pass: 16,
                 })
             },
         };
@@ -191,6 +206,8 @@ impl TaskControlBlock {
                     exit_code: 0,
                     heap_bottom: parent_inner.heap_bottom,
                     program_brk: parent_inner.program_brk,
+                    stride: DEFAULT_PRIORITY,
+                    pass: 16,
                 })
             },
         });
@@ -235,6 +252,20 @@ impl TaskControlBlock {
         } else {
             None
         }
+    }
+
+    /// 根据 ELF 数据创建一个新的进程
+    pub fn spawn(self: &Arc<Self>, elf_data: &[u8]) -> Arc<Self> {
+        // 创建一个新的 TaskControlBlock 实例
+        let new_task = Arc::new(Self::new(elf_data));
+        // 获取父进程的独占访问权限
+        let mut parent_pcb = self.inner_exclusive_access();
+        // 将新任务添加到父进程的子任务列表中
+        parent_pcb.children.push(new_task.clone());
+        // 将父进程链接到新任务
+        new_task.inner_exclusive_access().parent = Some(Arc::downgrade(self));
+        // 返回新任务的 Arc 引用
+        new_task
     }
 }
 

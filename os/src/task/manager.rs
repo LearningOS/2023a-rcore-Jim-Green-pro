@@ -7,6 +7,7 @@ use lazy_static::*;
 ///A array of `TaskControlBlock` that is thread-safe
 pub struct TaskManager {
     ready_queue: VecDeque<Arc<TaskControlBlock>>,
+
 }
 
 /// A simple FIFO scheduler.
@@ -22,8 +23,26 @@ impl TaskManager {
         self.ready_queue.push_back(task);
     }
     /// Take a process out of the ready queue
+    /// 从就绪队列中取出具有最小stride值的进程
     pub fn fetch(&mut self) -> Option<Arc<TaskControlBlock>> {
-        self.ready_queue.pop_front()
+        if self.ready_queue.is_empty() {
+            None
+        } else {
+            let mut min_stride = usize::MAX;
+            let mut min_index = 0;
+            // 遍历就绪队列，找到stride值最小的任务
+            for (index, task) in self.ready_queue.iter().enumerate() {
+                let stride = task.inner_exclusive_access().stride;
+                if stride < min_stride {
+                    min_stride = stride;
+                    min_index = index;
+                }
+            }
+            // 移除并返回具有最小stride值的任务
+            let task = self.ready_queue.remove(min_index).unwrap();
+            task.inner_exclusive_access().update_stride();
+            Some(task)
+        }
     }
 }
 

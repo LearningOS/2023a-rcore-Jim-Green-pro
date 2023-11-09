@@ -11,6 +11,10 @@ use crate::{
     },
 };
 
+//const MIN_PRIORITY: isize = 1; // 最低优先级
+const MAX_PRIORITY: isize = 10; // 最高优先级
+
+
 #[repr(C)]
 #[derive(Debug)]
 pub struct TimeVal {
@@ -166,12 +170,31 @@ pub fn sys_sbrk(size: i32) -> isize {
 
 /// YOUR JOB: Implement spawn.
 /// HINT: fork + exec =/= spawn
-pub fn sys_spawn(_path: *const u8) -> isize {
+pub fn sys_spawn(path: *const u8) -> isize {
     trace!(
         "kernel:pid[{}] sys_spawn NOT IMPLEMENTED",
         current_task().unwrap().pid.0
     );
-    -1
+    // 获取当前用户的内存地址空间的 token
+    let token = current_user_token();
+    // 将用户空间的字符串地址转换为内核可以直接使用的 Rust 字符串
+    let path = translated_str(token, path);
+    // 尝试根据路径获取应用程序的数据
+    if let Some(data) = get_app_data_by_name(path.as_str()) {
+        // 获取当前任务的上下文
+        let task = current_task().unwrap();
+        // 使用获取到的应用程序数据创建新的进程，并获取这个新进程的上下文
+        let new_task = task.spawn(data);
+        // 获取新进程的 PID
+        let pid = new_task.pid.0;
+        // 将新进程添加到任务队列中。
+        add_task(new_task);
+        // 返回新进程的 PID
+        return pid as isize;
+    } else {
+        // 如果获取应用程序数据失败，则返回 -1。
+        -1
+    }
 }
 
 // YOUR JOB: Set task priority.
@@ -180,5 +203,13 @@ pub fn sys_set_priority(_prio: isize) -> isize {
         "kernel:pid[{}] sys_set_priority NOT IMPLEMENTED",
         current_task().unwrap().pid.0
     );
-    -1
+    
+    let task = current_task().unwrap();
+    let mut inner = task.inner_exclusive_access();
+    // 检查优先级值是否在合法范围内
+    if _prio < 0 || _prio > MAX_PRIORITY {
+        return -1; // 返回错误码
+    }
+    inner.stride = _prio as usize; // 更新优先级
+    0
 }
